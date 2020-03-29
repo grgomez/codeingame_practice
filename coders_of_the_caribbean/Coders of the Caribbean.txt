@@ -1,0 +1,46 @@
+hexagonal grid 
+
+ship size 3x1
+
+Barrels of rum units: 10 <= BARREL <= 20 
+
+Max rum units: 100 - surplus is lost
+
+----------------------------------------------------
+INPUT
+----------------------------------------------------
+myShipCount - integer for the # of ships controlled
+entityCount - integer for the # of entities on the grid
+entityId - integer
+entityType - string
+x & y - integers for the coordinates
+arg1, arg2, arg3, arg4
+
+if entityType = SHIP
+	arg1 = ship's rotation orientation (between 0 and 5)
+	arg2 = the ship's speed (between 0 and 2)
+	arg3 = ship's stock of rum units
+	arg4 = 1 if the ship is controlled by me, 0 otherwise
+
+IF entityType = BARREL
+	arg1 = the amount of rum in the barrel
+
+If entityType = CANNONBALL
+	x, y = target coordinates
+	arg1 = entityId of the ship that fired the canonball
+	arg2 = the number of turns before impact(1 means the canonball will land at the end of the current turn)
+
+If entityType = MINE, then the integers have no meaning 
+-------------------------------------------------------
+OUTPUT
+-------------------------------------------------------
+MOVE x y: move automatically towards the specified coordinate
+FIRE x y: launch a cannon ball to the specified coordinate
+MINE: place a mine on the cell behind the ship
+SLOWER: speed the ship down
+WAIT: perform no action
+------------------------------------------------------
+MAP
+------------------------------------------------------
+The map is based on odd-r offset coordinates that we will need to 
+convert to cube coordinates to run algorithms and calculate distances.

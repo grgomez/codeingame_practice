@@ -1,0 +1,37 @@
+offset coordinate -- odd-r
+
+columns are named col(q), and rows are named row(r).
+
+Cube coordinates:
+The constraint is that any cube coordinate has is: x + y + z = 0
+
+Coordinate conversion:
+Algorithms for hexagonal coordinates is simpler in cube coordinates
+therefore it is best to convert back and forth.
+
+struct OffsetCoord {
+	const int col, row;
+	OffsetCoord(int col_, int row_): col(col_), row(row_) {}
+};
+
+function cube_to_oddr(cube):
+	var col = cube.x + (cube.z - (cube.z&1)) / 2
+	var row = cube.z
+	return OffsetCoord(col, row)
+
+function oddr_to_cube(hex):
+	var x = hex.col - (hex.row - (hex.row&1)) / 2
+	var z = hex.row
+	var y  = -x-z
+	return Cube(x, y, z)
+
+Note: &1 represents bitwise and. 
+
+-------------------------------------------------------------------
+distances: in cube coordinate a hexagon is a cube in 3d space.
+Therefore the function is:
+
+function cube_distance(a, b):
+	return (abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)) / 2
+
+
