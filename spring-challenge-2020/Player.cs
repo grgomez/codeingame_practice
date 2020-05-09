@@ -35,16 +35,24 @@ class Player
         int height = int.Parse(inputs[1]); // top left corner is (x=0, y=0)
 
         /* contains the walls, pacDudes, and pellets in the game */
-        //char[,] map = new char[width, height];
+        Obstacle[,] map = new Obstacle[width, height];
 
         for (int i = 0; i < height; i++)
         {
             string row = Console.ReadLine(); // one line of the grid: space " " is floor, pound "#" is wall
-            // for (int j = 0; j < width; ++j) {
-            //     map[j, i] = row[j];
-            //     Console.Error.Write(row[j]);
-            // }
-            //Console.Error.WriteLine();
+            for (int j = 0; j < width; ++j) {
+                switch (row[j]) {
+                    case ' ':
+                        map[j, i] = Obstacle.F;
+                        break;
+                    case '#':
+                        map[j, i] = Obstacle.W;
+                        break;
+                }
+
+                Console.Error.Write(map[j, i]);
+            }
+            Console.Error.WriteLine();
         }
 
         #endregion
@@ -62,6 +70,8 @@ class Player
             var pacDudes = new List<PacMan>();
             var pellets = new List<Pellet>();
             var commands = new StringBuilder();
+            /* We need a shallow copy of the map to keep track of pacDudes and pellets */
+            var current_map = map.Clone() as Obstacle[,];
 
             #endregion
 
@@ -78,10 +88,13 @@ class Player
                 int speedTurnsLeft = int.Parse(inputs[5]); // unused in wood leagues
                 int abilityCooldown = int.Parse(inputs[6]); // unused in wood leagues
 
+                current_map[x, y] = mine ? Obstacle.M : Obstacle.E;
                 pacDudes.Add(new PacMan(pacId, mine, new Position(x, y)));
             }
 
             #endregion
+
+            #region pellets Initialization
 
             int visiblePelletCount = int.Parse(Console.ReadLine()); // all pellets in sight
             for (int i = 0; i < visiblePelletCount; i++)
@@ -90,8 +103,21 @@ class Player
                 int x = int.Parse(inputs[0]);
                 int y = int.Parse(inputs[1]);
                 int value = int.Parse(inputs[2]); // amount of points this pellet is worth
+                
+                current_map[x, y] = Obstacle.P;
                 pellets.Add(new Pellet(new Position(x, y), value));
             }
+
+            #endregion
+
+            /* Print the map for debugging purposes */
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; ++j) Console.Error.Write(current_map[j, i]);
+                Console.Error.WriteLine();
+            }
+
+            #region PacDudes Processing 
 
             foreach(var pacman in pacDudes) {
                 if (!pacman.Mine) continue;
@@ -107,13 +133,20 @@ class Player
                     }
                 }
 
-                string command = string.Format("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
+                string command;
+                if (target == null) command = string.Format("MOVE {0} {1} {2}", pacman.PacId, pacman.Position.x, pacman.Position.y);
+                else command = string.Format("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
+                
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
 
             }
 
+            #endregion
+
+            /* Send the command */
             Console.WriteLine(commands.ToString());
+
         }
     }
 
@@ -206,6 +239,20 @@ class Player
         }
 
         public override int GetHashCode() => HashCode<int, int>.Combine(x, y);*/
+    }
+
+    /*
+        Enumeration of the different types of "obstacles"
+        in the map.
+
+        This will become useful later on to determine the costs during path-finding.
+    */
+    public enum Obstacle {
+        F, /* Floor */
+        P, /* Pellet */
+        W, /* Wall */
+        M, /* MyPacDude(s) */
+        E /* EnemyPacDude(s) */
     }
 
     #endregion
