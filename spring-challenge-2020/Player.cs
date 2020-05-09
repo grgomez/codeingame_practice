@@ -68,6 +68,7 @@ class Player
             int visiblePacCount = int.Parse(Console.ReadLine()); // all your pacs and enemy pacs in sight
 
             var pacDudes = new List<PacMan>();
+            var enemyPacDudes = new List<PacMan>();
             var pellets = new List<Pellet>();
             var commands = new StringBuilder();
             /* We need a shallow copy of the map to keep track of pacDudes and pellets */
@@ -93,8 +94,11 @@ class Player
                 current_map[pacMan.Position.x, pacMan.Position.y] = 
                     pacMan.Mine ? Obstacle.M : Obstacle.E;
 
-                pacDudes.Add(pacMan);
-
+                if (pacMan.Mine) {
+                    pacDudes.Add(pacMan);
+                } else {
+                    enemyPacDudes.Add(pacMan);
+                }
             }
 
             #endregion
@@ -138,9 +142,7 @@ class Player
                     }
                 }
 
-                string command;
-                if (target == null) command = string.Format("MOVE {0} {1} {2}", pacman.PacId, pacman.Position.x, pacman.Position.y);
-                else command = string.Format("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
+                string command = pacman.MoveTo(target);
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
@@ -158,6 +160,8 @@ class Player
     #region Game Objects
 
     class PacMan {
+        #region Internal Variables
+
         private int m_pacId;
         private bool m_mine;
         private Position m_position;
@@ -165,10 +169,14 @@ class Player
         private int m_speedTurnsLeft;
         private int m_abilityCooldown;
 
+        #endregion
+
+        #region Constructor
         public PacMan(
             int pacId, bool mine, Position position, string type, 
             int speedTurnsLeft, int abilityCooldown
         ) {
+
             m_pacId = pacId;
             m_mine = mine;
             m_position = position;
@@ -187,6 +195,11 @@ class Player
                     break; 
             }
         }
+
+        #endregion
+
+        #region Properties
+
         public int PacId {
             get { return m_pacId; }
         }
@@ -205,6 +218,43 @@ class Player
         public int AbilityCooldown {
             get { return m_abilityCooldown; }
         }
+
+        #endregion
+
+        #region Functions
+
+        public string MoveTo(Position target) {
+            if (target == null) 
+                return string.Format("MOVE {0} {1} {2}", m_pacId, m_position.x, m_position.y);
+            
+            return string.Format("MOVE {0} {1} {2}", m_pacId, target.x, target.y);
+        }
+        public string Switch(PacType enemyType) {
+            
+            return m_abilityCooldown == 0 ? 
+                string.Format("SWITCH {0} {1}", m_pacId, CounterPacType(enemyType)) : string.Empty;
+        }
+        public string Speed() {
+            return (m_abilityCooldown == 0) && (m_speedTurnsLeft == 0) ?
+                string.Format("SPEED {0}", m_pacId) : string.Empty;
+        }
+
+        /* 
+            Return the type to counter the enemy's type
+        */
+        private string CounterPacType(PacType enemyType) {
+            switch (enemyType) {
+                case PacType.Rock:
+                    return "PAPER";
+                case PacType.Paper:
+                    return "SCISSORS";
+                case PacType.Scissors:
+                default:
+                    return "ROCK";
+            }
+        }
+
+        #endregion
     }
 
     class Pellet {
