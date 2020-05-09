@@ -8,9 +8,7 @@ using System.Collections.Generic;
 /*
     TODO:
 
-    - Populate map with walls, pacDudes, and pellets
-    - Add extra input parameters to PacMan and Pellet classes
-    - Create class for Rock, Paper, Scissors types
+    - Add extra input parameters to Pellet class
     - Create comparator for Type:
         Paper beats Rock
         Rock beats Scissor
@@ -18,6 +16,12 @@ using System.Collections.Generic;
     - Implement function to convert map to graph
     - Implement pathfinding algorithm to calculate optimal path.
         - What's the cost based on? 
+    - Need to smarten up the bot to chase down enemies if close by and recently
+    converted.
+    - Use Speed ability after switch to chase the enemy?
+    - Need to implement pathfinding algorithm so I can calculate the cost
+        of eating more pellets vs chasing enemy.
+
 */
 
 /**
