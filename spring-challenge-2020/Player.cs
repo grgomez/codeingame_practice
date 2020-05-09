@@ -129,20 +129,38 @@ class Player
             #region PacDudes Processing 
 
             foreach(var pacman in pacDudes) {
-                if (!pacman.Mine) continue;
-
                 Position pos = pacman.Position;
+                string command = string.Empty;
+
+                /* Look whether the enemy is nearby and switch if they're close enough! */ 
                 int shortest_distance = 100;
-                Position target = null;
-                foreach(var pellet in pellets) {
-                    int distance = pellet.Position.distance(pos);
+                command = string.Empty;
+                foreach (var enemy in enemyPacDudes) {
+                    int distance = pos.distance(enemy.Position);
                     shortest_distance = Math.Min(shortest_distance, distance);
-                    if (distance == shortest_distance) {
-                        target = pellet.Position;
+                    if (distance <= 3) {
+                        command = pacman.Switch(enemy.Type);
+                        Console.Error.WriteLine("The an enemy is {0} units away", shortest_distance);
+                        break;
                     }
                 }
 
-                string command = pacman.MoveTo(target);
+                Console.Error.WriteLine("The an enemy is {0} units away", shortest_distance);
+
+                if (string.IsNullOrEmpty(command)) {
+                    /* Look for the closest pellet */
+                    shortest_distance = 100;
+                    Position target = null;
+                    foreach(var pellet in pellets) {
+                        int distance = pos.distance(pellet.Position);
+                        shortest_distance = Math.Min(shortest_distance, distance);
+                        if (distance == shortest_distance) {
+                            target = pellet.Position;
+                        }
+                    }
+
+                    command = pacman.MoveTo(target);
+                }
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
