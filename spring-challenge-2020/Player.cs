@@ -5,6 +5,21 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 
+/*
+    TODO:
+
+    - Populate map with walls, pacDudes, and pellets
+    - Add extra input parameters to PacMan and Pellet classes
+    - Create class for Rock, Paper, Scissors types
+    - Create comparator for Type:
+        Paper beats Rock
+        Rock beats Scissor
+        Scissor beats Paper
+    - Implement function to convert map to graph
+    - Implement pathfinding algorithm to calculate optimal path.
+        - What's the cost based on? 
+*/
+
 /**
  * Grab the pellets as fast as you can!
  **/
