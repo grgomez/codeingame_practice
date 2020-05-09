@@ -46,6 +46,8 @@ class Player
 
             var pacDudes = new List<PacMan>();
             var pellets = new List<Pellet>();
+            var commands = new StringBuilder();
+
             #endregion
 
             #region pacDudes Initialization
@@ -90,9 +92,13 @@ class Player
                     }
                 }
 
-                Console.WriteLine("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
+                string command = string.Format("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
+                if (commands.Length == 0) commands.Append(command);
+                else commands.AppendFormat("|{0}", command);
 
             }
+
+            Console.WriteLine(commands.ToString());
         }
     }
 
