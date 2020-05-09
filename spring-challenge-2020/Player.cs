@@ -19,7 +19,7 @@ class Player
         int width = int.Parse(inputs[0]); // size of the grid
         int height = int.Parse(inputs[1]); // top left corner is (x=0, y=0)
 
-        /* contains the walls, pacdudes, and pellets in the game */
+        /* contains the walls, pacDudes, and pellets in the game */
         //char[,] map = new char[width, height];
 
         for (int i = 0; i < height; i++)
@@ -44,12 +44,11 @@ class Player
             int opponentScore = int.Parse(inputs[1]);
             int visiblePacCount = int.Parse(Console.ReadLine()); // all your pacs and enemy pacs in sight
 
-            var PacDudes = new List<PacMan>();
-            var Pellets = new List<Pellet>();
-
+            var pacDudes = new List<PacMan>();
+            var pellets = new List<Pellet>();
             #endregion
 
-            #region PacDudes Initialization
+            #region pacDudes Initialization
 
             for (int i = 0; i < visiblePacCount; i++)
             {
@@ -62,7 +61,7 @@ class Player
                 int speedTurnsLeft = int.Parse(inputs[5]); // unused in wood leagues
                 int abilityCooldown = int.Parse(inputs[6]); // unused in wood leagues
 
-                PacDudes.Add(new PacMan(pacId, mine, new Position(x, y)));
+                pacDudes.Add(new PacMan(pacId, mine, new Position(x, y)));
             }
 
             #endregion
@@ -74,16 +73,16 @@ class Player
                 int x = int.Parse(inputs[0]);
                 int y = int.Parse(inputs[1]);
                 int value = int.Parse(inputs[2]); // amount of points this pellet is worth
-                Pellets.Add(new Pellet(new Position(x, y), value));
+                pellets.Add(new Pellet(new Position(x, y), value));
             }
 
-            foreach(var pacman in PacDudes) {
+            foreach(var pacman in pacDudes) {
                 if (!pacman.Mine) continue;
 
                 Position pos = pacman.Position;
                 int shortest_distance = 100;
                 Position target = null;
-                foreach(var pellet in Pellets) {
+                foreach(var pellet in pellets) {
                     int distance = pellet.Position.distance(pos);
                     shortest_distance = Math.Min(shortest_distance, distance);
                     if (distance == shortest_distance) {
