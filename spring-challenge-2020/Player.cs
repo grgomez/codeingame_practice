@@ -80,16 +80,21 @@ class Player
             for (int i = 0; i < visiblePacCount; i++)
             {
                 inputs = Console.ReadLine().Split(' ');
-                int pacId = int.Parse(inputs[0]); // pac number (unique within a team)
-                bool mine = inputs[1] != "0"; // true if this pac is yours
-                int x = int.Parse(inputs[2]); // position in the grid
-                int y = int.Parse(inputs[3]); // position in the grid
-                string typeId = inputs[4]; // unused in wood leagues
-                int speedTurnsLeft = int.Parse(inputs[5]); // unused in wood leagues
-                int abilityCooldown = int.Parse(inputs[6]); // unused in wood leagues
 
-                current_map[x, y] = mine ? Obstacle.M : Obstacle.E;
-                pacDudes.Add(new PacMan(pacId, mine, new Position(x, y)));
+                var pacMan = new PacMan(
+                    int.Parse(inputs[0]), // pacId
+                    inputs[1] != "0", // is it mine? 
+                    new Position(int.Parse(inputs[2]), int.Parse(inputs[3])), // x, y coordinates
+                    inputs[4], // pacType: Rock, Paper, Scissors
+                    int.Parse(inputs[5]), // Speed Turns Left 
+                    int.Parse(inputs[6]) // Ability Cooldown 
+                );
+
+                current_map[pacMan.Position.x, pacMan.Position.y] = 
+                    pacMan.Mine ? Obstacle.M : Obstacle.E;
+
+                pacDudes.Add(pacMan);
+
             }
 
             #endregion
@@ -136,7 +141,7 @@ class Player
                 string command;
                 if (target == null) command = string.Format("MOVE {0} {1} {2}", pacman.PacId, pacman.Position.x, pacman.Position.y);
                 else command = string.Format("MOVE {0} {1} {2}", pacman.PacId, target.x, target.y);
-                
+
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
 
@@ -156,11 +161,31 @@ class Player
         private int m_pacId;
         private bool m_mine;
         private Position m_position;
+        private PacType m_type;
+        private int m_speedTurnsLeft;
+        private int m_abilityCooldown;
 
-        public PacMan(int pacId, bool mine, Position position) {
+        public PacMan(
+            int pacId, bool mine, Position position, string type, 
+            int speedTurnsLeft, int abilityCooldown
+        ) {
             m_pacId = pacId;
             m_mine = mine;
             m_position = position;
+            m_speedTurnsLeft = speedTurnsLeft;
+            m_abilityCooldown = abilityCooldown;
+
+            switch(type) {
+                case "ROCK":
+                    m_type = PacType.Rock;
+                    break;
+                case "PAPER":
+                    m_type = PacType.Paper;
+                    break;
+                case "SCISSORS":
+                    m_type = PacType.Scissors;
+                    break; 
+            }
         }
         public int PacId {
             get { return m_pacId; }
@@ -170,6 +195,15 @@ class Player
         }
         public Position Position {
             get { return m_position; }
+        }
+        public PacType Type {
+            get { return m_type; }
+        }
+        public int SpeedTurnsLeft {
+            get { return m_speedTurnsLeft; }
+        }
+        public int AbilityCooldown {
+            get { return m_abilityCooldown; }
         }
     }
 
@@ -253,6 +287,12 @@ class Player
         W, /* Wall */
         M, /* MyPacDude(s) */
         E /* EnemyPacDude(s) */
+    }
+
+    public enum PacType {
+        Rock,
+        Paper,
+        Scissors
     }
 
     #endregion
