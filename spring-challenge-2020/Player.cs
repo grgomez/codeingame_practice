@@ -7,8 +7,6 @@ using System.Collections.Generic;
 
 /*
     TODO:
-
-    - Add extra input parameters to Pellet class
     - Create comparator for Type:
         Paper beats Rock
         Rock beats Scissor
@@ -21,7 +19,9 @@ using System.Collections.Generic;
     - Use Speed ability after switch to chase the enemy?
     - Need to implement pathfinding algorithm so I can calculate the cost
         of eating more pellets vs chasing enemy.
-
+    - Maybe make a command manager where the commands are to be generated
+        based on the pellets/cost/enemies and actions performed in the past?
+        This would be a function or class within the PacDude class...
 */
 
 /**
@@ -127,7 +127,7 @@ class Player
                     pellet.Position.x, 
                     pellet.Position.y
                 ] = Obstacle.P;
-                
+
                 pellets.Add(pellet);
             }
 
@@ -146,15 +146,21 @@ class Player
                 Position pos = pacman.Position;
                 string command = string.Empty;
 
+                /* 
+                    TODO:
+                        - Refactor these to get the closest objects
+                        - Pass objects to PacDudes's GetCommand function
+
+                */
                 /* Look whether the enemy is nearby and switch if they're close enough! */ 
                 int shortest_distance = 100;
                 command = string.Empty;
                 foreach (var enemy in enemyPacDudes) {
-                    int distance = pos.distance(enemy.Position);
+                    int distance = pos.GetDistance(enemy.Position);
                     shortest_distance = Math.Min(shortest_distance, distance);
                     if (distance <= 3) {
                         command = pacman.Switch(enemy.Type);
-                        Console.Error.WriteLine("The an enemy is {0} units away", shortest_distance);
+                        Console.Error.WriteLine("The enemy is {0} units away", shortest_distance);
                         break;
                     }
                 }
@@ -166,7 +172,7 @@ class Player
                     shortest_distance = 100;
                     Position target = null;
                     foreach(var pellet in pellets) {
-                        int distance = pos.distance(pellet.Position);
+                        int distance = pos.GetDistance(pellet.Position);
                         shortest_distance = Math.Min(shortest_distance, distance);
                         if (distance == shortest_distance) {
                             target = pellet.Position;
@@ -270,7 +276,26 @@ class Player
             return (m_abilityCooldown == 0) && (m_speedTurnsLeft == 0) ?
                 string.Format("SPEED {0}", m_pacId) : string.Empty;
         }
-
+        /* 
+            TODO:
+            - Cases to cover:
+                - If no enemy is nearby:
+                    - Catch the closest pellets
+                    - If Sped up and Switched but enemy is no longer nearby, focus on pellets
+                - If enemy is nearby:
+                    - Switch type to counter enemy -- Set Switch flag to true -- REMEMBER cool down is 10 turns!
+                    - If already switched and ability cooled-down 
+                        - Check if PacDude can beat enemy
+                            - If it can Speed up and chase enemy -- We'll need a flag for Switch such that it's false after speed up
+                    - If already switched but still cooling-down, catch the closest pellets
+                    - If PacDude is  still in the same coordinate then move away... It means we've clashed with another pacDude!
+            - Within this function we'd have to implement the pathfinding function
+        */
+        /* This is the function where all the decision making is to be made */
+        public string GetCommand(PacMan enemyPacDude, Pellet closestPellet) {
+            // TODO
+            return string.Empty;
+        }
         /* 
             Return the type to counter the enemy's type
         */
@@ -305,23 +330,7 @@ class Player
         }
     }
 
-    // class MapPosition : Position {
-    //     private int m_cost;
-    //     public MapPosition(int x, int y) {
-    //         m_x = x;
-    //         m_y = y;
-    //     }
-    //     public MapPosition(int x, int y, int cost) {
-    //         m_x = x;
-    //         m_y = y;
-    //         m_cost = m_cost;
-    //     }
-    //     public int Cost {
-    //         get { return m_cost; }
-    //         set { m_cost = value; }
-    //     }
-    // }
-    class Position /*: IEquatable<Position> */{
+    class Position : IComparable<Position> {
         private int m_x;
         private int m_y;
 
@@ -336,25 +345,16 @@ class Player
             get { return m_y; }
         }
 
-        public int distance (Position final) {
+        public int GetDistance (Position final) {
             /* Manhattan distance */
             return Math.Abs(final.x - m_x) + Math.Abs(final.y - m_y);
         }
 
-        /*public override bool Equals(object obj)
-        {
-            if (obj == null) return false;
-            Part objAsPosition = obj as Position;
-            if (objAsPosition == null) return false;
-            else return Equals(objAsPosition);
+        public int CompareTo(Position other) {
+            if (m_x == other.x && m_y == other.y) return 0;
+            else return this.GetDistance(other);
         }
 
-        public override bool Equals(Position position) {        
-            return (m_x = position.x) 
-                && (m_y == position.y);
-        }
-
-        public override int GetHashCode() => HashCode<int, int>.Combine(x, y);*/
     }
 
     /*
