@@ -75,6 +75,7 @@ class Player
             var enemyPacDudes = new List<PacMan>();
             var pellets = new List<Pellet>();
             var commands = new StringBuilder();
+
             /* We need a shallow copy of the map to keep track of pacDudes and pellets */
             var current_map = map.Clone() as Obstacle[,];
 
@@ -113,12 +114,21 @@ class Player
             for (int i = 0; i < visiblePelletCount; i++)
             {
                 inputs = Console.ReadLine().Split(' ');
-                int x = int.Parse(inputs[0]);
-                int y = int.Parse(inputs[1]);
-                int value = int.Parse(inputs[2]); // amount of points this pellet is worth
                 
-                current_map[x, y] = Obstacle.P;
-                pellets.Add(new Pellet(new Position(x, y), value));
+                var pellet = new Pellet(
+                    new Position(
+                        int.Parse(inputs[0]), // x
+                        int.Parse(inputs[1])  // y
+                    ),
+                    int.Parse(inputs[2]) // amount of points this pellet is worth
+                );
+
+                current_map[
+                    pellet.Position.x, 
+                    pellet.Position.y
+                ] = Obstacle.P;
+                
+                pellets.Add(pellet);
             }
 
             #endregion
