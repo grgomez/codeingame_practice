@@ -19,9 +19,6 @@ using System.Collections.Generic;
     - Use Speed ability after switch to chase the enemy?
     - Need to implement pathfinding algorithm so I can calculate the cost
         of eating more pellets vs chasing enemy.
-    - Maybe make a command manager where the commands are to be generated
-        based on the pellets/cost/enemies and actions performed in the past?
-        This would be a function or class within the PacDude class...
 */
 
 /**
@@ -144,43 +141,14 @@ class Player
 
             foreach(var pacman in pacDudes) {
                 Position pos = pacman.Position;
-                string command = string.Empty;
 
-                /* 
-                    TODO:
-                        - Refactor these to get the closest objects
-                        - Pass objects to PacDudes's GetCommand function
+                PacMan enemy = null;
+                int enemyDistance = FindClosestObject(pos, enemyPacDudes, ref enemy);
 
-                */
-                /* Look whether the enemy is nearby and switch if they're close enough! */ 
-                int shortest_distance = 100;
-                command = string.Empty;
-                foreach (var enemy in enemyPacDudes) {
-                    int distance = pos.GetDistance(enemy.Position);
-                    shortest_distance = Math.Min(shortest_distance, distance);
-                    if (distance <= 3) {
-                        command = pacman.Switch(enemy.Type);
-                        Console.Error.WriteLine("The enemy is {0} units away", shortest_distance);
-                        break;
-                    }
-                }
+                Pellet pellet = null;
+                int pelletDistance = FindClosestObject(pos, pellets, ref pellet);
 
-                Console.Error.WriteLine("The an enemy is {0} units away", shortest_distance);
-
-                if (string.IsNullOrEmpty(command)) {
-                    /* Look for the closest pellet */
-                    shortest_distance = 100;
-                    Position target = null;
-                    foreach(var pellet in pellets) {
-                        int distance = pos.GetDistance(pellet.Position);
-                        shortest_distance = Math.Min(shortest_distance, distance);
-                        if (distance == shortest_distance) {
-                            target = pellet.Position;
-                        }
-                    }
-
-                    command = pacman.MoveTo(target);
-                }
+                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance);
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
@@ -193,6 +161,38 @@ class Player
             Console.WriteLine(commands.ToString());
 
         }
+    }
+
+    /*
+        TODO: Maybe add this into a interface or something? Instead of repeating it?
+    */
+    static int FindClosestObject(Position pos, List<PacMan> objects, ref PacMan target) {
+        int targetDistance = 100;
+        int shortestDistance = 100;
+
+        foreach(var obj in objects) {
+            int distance = pos.GetDistance(obj.Position);
+            shortestDistance = Math.Min(shortestDistance, distance);
+            if (distance == shortestDistance) {
+                target = obj;
+            }
+        }
+
+        return shortestDistance;
+    }
+    static int FindClosestObject(Position pos, List<Pellet> objects, ref Pellet target) {
+        int targetDistance = 100;
+        int shortestDistance = 100;
+
+        foreach(var obj in objects) {
+            int distance = pos.GetDistance(obj.Position);
+            shortestDistance = Math.Min(shortestDistance, distance);
+            if (distance == shortestDistance) {
+                target = obj;
+            }
+        }
+
+        return shortestDistance;
     }
 
     #region Game Objects
@@ -292,9 +292,12 @@ class Player
             - Within this function we'd have to implement the pathfinding function
         */
         /* This is the function where all the decision making is to be made */
-        public string GetCommand(PacMan enemyPacDude, Pellet closestPellet) {
-            // TODO
-            return string.Empty;
+        public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance) {
+            if (enemy != null && enemyDistance <= 3) {
+                return this.Switch(enemy.Type);
+            }
+
+            return this.MoveTo(pellet.Position);
         }
         /* 
             Return the type to counter the enemy's type
