@@ -11,14 +11,12 @@ using System.Collections.Generic;
         Paper beats Rock
         Rock beats Scissor
         Scissor beats Paper
-    - Implement function to convert map to graph
-    - Implement pathfinding algorithm to calculate optimal path.
-        - What's the cost based on? 
     - Need to smarten up the bot to chase down enemies if close by and recently
     converted.
     - Use Speed ability after switch to chase the enemy?
     - Need to implement pathfinding algorithm so I can calculate the cost
         of eating more pellets vs chasing enemy.
+    - Convert pathfinding static functions and map to a class?
 */
 
 /**
@@ -142,17 +140,19 @@ class Player
             foreach(var pacman in pacDudes) {
                 Position pos = pacman.Position;
 
+                /* track visited tiles */
+                map[pos.x, pos.y] = Obstacle.V;
+
                 PacMan enemy = null;
                 int enemyDistance = FindClosestObject(pos, enemyPacDudes, ref enemy);
 
                 Pellet pellet = null;
                 int pelletDistance = FindClosestObject(pos, pellets, ref pellet);
 
-                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance);
+                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance, map, width, height);
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
-
             }
 
             #endregion
@@ -161,6 +161,83 @@ class Player
             Console.WriteLine(commands.ToString());
 
         }
+    }
+
+    /*
+        Simple Breadth-First Search (BFS) to search for closest valid coordinate
+        
+        Based on genius source:
+            https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    */
+    static Position BFS(
+        Position start, 
+        Obstacle[,] map, 
+        int width, 
+        int height
+    ) {
+        var frontier = new Queue<Position>();
+        var cameFrom = new Dictionary<string, Position>();
+        cameFrom.Add(start.ToString(), null);
+        Position goal = null;
+
+        frontier.Enqueue(start);
+        while (frontier.Count !=0) {
+            var current = frontier.Dequeue();
+
+            Obstacle obstacle = map[current.x, current.y];
+
+            if (
+                obstacle == Obstacle.F ||
+                obstacle == Obstacle.P
+            ) {
+                    goal = current;
+            }
+
+            foreach(var next in GetNeighbours(current, width, height)) {
+                if (!cameFrom.ContainsKey(next.ToString())) {
+                    frontier.Enqueue(next);
+                    cameFrom.Add(next.ToString(), current);
+                }
+            }
+        }
+
+        return goal;
+    }
+
+    /*
+        Based on excellent source:
+            https://www.redblobgames.com/pathfinding/grids/graphs.html
+    */
+    static List<Position> GetNeighbours(Position pos, int width, int height) {
+        var directions = new List<Position> {
+            new Position(1, 0), // Right
+            new Position(0, 1), // Up
+            new Position(-1, 0), // Left
+            new Position(0, -1) // Down
+        };
+
+        var result = new List<Position>();
+
+        foreach(var direction in directions) {
+            Position neighbour = 
+                new Position(
+                    direction.x + pos.x, 
+                    direction.y + pos.y);
+            
+            /* 
+                If the coordinates are beyond the maximum or minimum
+                let's wrap around!
+            */
+            if (neighbour.x >= width) neighbour.x = 0;
+            else if (neighbour.x < 0) neighbour.x = width - 1;
+
+            if (neighbour.y >= height) neighbour.y = 0;
+            else if (neighbour.y < 0) neighbour.y = height - 1;
+
+            result.Add(neighbour);
+        }
+
+        return result;
     }
 
     /*
@@ -261,10 +338,7 @@ class Player
 
         #region Functions
 
-        public string MoveTo(Position target) {
-            if (target == null) 
-                return string.Format("MOVE {0} {1} {2}", m_pacId, m_position.x, m_position.y);
-            
+        public string MoveTo(Position target) {            
             return string.Format("MOVE {0} {1} {2}", m_pacId, target.x, target.y);
         }
         public string Switch(PacType enemyType) {
@@ -292,12 +366,22 @@ class Player
             - Within this function we'd have to implement the pathfinding function
         */
         /* This is the function where all the decision making is to be made */
-        public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance) {
+        public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance, Obstacle[,] map, int width, int height) {
             if (enemy != null && enemyDistance <= 3) {
                 return this.Switch(enemy.Type);
             }
 
-            return this.MoveTo(pellet.Position);
+            /* 
+                TODO:
+                    - If the pellet is null and we get here it means we are in an empty area...
+                        We need to start searching for more pellets...
+            */
+            if (pellet == null) {
+                Position next = BFS(m_position, map, width, height);
+                return next == null ? this.MoveTo(m_position) : this.MoveTo(next);
+            } else {
+                return this.MoveTo(pellet.Position);
+            }
         }
         /* 
             Return the type to counter the enemy's type
@@ -343,9 +427,11 @@ class Player
         }
         public int x {
             get { return m_x; }
+            set { m_x = value; }
         }
         public int y {
             get { return m_y; }
+            set { m_y = value; }
         }
 
         public int GetDistance (Position final) {
@@ -356,6 +442,10 @@ class Player
         public int CompareTo(Position other) {
             if (m_x == other.x && m_y == other.y) return 0;
             else return this.GetDistance(other);
+        }
+
+        public override string ToString() {
+            return string.Format("({0},{1})", m_x, m_y);
         }
 
     }
@@ -371,7 +461,8 @@ class Player
         P, /* Pellet */
         W, /* Wall */
         M, /* MyPacDude(s) */
-        E /* EnemyPacDude(s) */
+        E, /* EnemyPacDude(s) */
+        V /* Visited */
     }
 
     public enum PacType {
