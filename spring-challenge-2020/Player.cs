@@ -17,6 +17,7 @@ using System.Collections.Generic;
     - Need to implement pathfinding algorithm so I can calculate the cost
         of eating more pellets vs chasing enemy.
     - Convert pathfinding static functions and map to a class?
+    - If pacdudes of the same team are stuck make them move away
 */
 
 /**
@@ -91,6 +92,8 @@ class Player
                     int.Parse(inputs[6]) // Ability Cooldown 
                 );
 
+                /* track visited tiles */
+                map[pacMan.Position.x, pacMan.Position.y] = Obstacle.V;
                 current_map[pacMan.Position.x, pacMan.Position.y] = 
                     pacMan.Mine ? Obstacle.M : Obstacle.E;
 
@@ -140,16 +143,13 @@ class Player
             foreach(var pacman in pacDudes) {
                 Position pos = pacman.Position;
 
-                /* track visited tiles */
-                map[pos.x, pos.y] = Obstacle.V;
-
                 PacMan enemy = null;
                 int enemyDistance = FindClosestObject(pos, enemyPacDudes, ref enemy);
 
                 Pellet pellet = null;
                 int pelletDistance = FindClosestObject(pos, pellets, ref pellet);
 
-                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance, map, width, height);
+                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance, current_map, width, height);
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
@@ -165,7 +165,7 @@ class Player
 
     /*
         Simple Breadth-First Search (BFS) to search for closest valid coordinate
-        
+
         Based on genius source:
             https://www.redblobgames.com/pathfinding/a-star/introduction.html
     */
@@ -187,10 +187,12 @@ class Player
             Obstacle obstacle = map[current.x, current.y];
 
             if (
+                //obstacle == Obstacle.E ||
                 obstacle == Obstacle.F ||
                 obstacle == Obstacle.P
             ) {
                     goal = current;
+                    break;
             }
 
             foreach(var next in GetNeighbours(current, width, height)) {
@@ -341,14 +343,12 @@ class Player
         public string MoveTo(Position target) {            
             return string.Format("MOVE {0} {1} {2}", m_pacId, target.x, target.y);
         }
-        public string Switch(PacType enemyType) {
+        public string Switch(string counterType) {
             
-            return m_abilityCooldown == 0 ? 
-                string.Format("SWITCH {0} {1}", m_pacId, CounterPacType(enemyType)) : string.Empty;
+            return string.Format("SWITCH {0} {1}", m_pacId, counterType);
         }
         public string Speed() {
-            return (m_abilityCooldown == 0) && (m_speedTurnsLeft == 0) ?
-                string.Format("SPEED {0}", m_pacId) : string.Empty;
+            return string.Format("SPEED {0}", m_pacId);
         }
         /* 
             TODO:
@@ -367,15 +367,15 @@ class Player
         */
         /* This is the function where all the decision making is to be made */
         public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance, Obstacle[,] map, int width, int height) {
-            if (enemy != null && enemyDistance <= 3) {
-                return this.Switch(enemy.Type);
+            
+            /* If we're cooled down then let's put our abilities to good use! */
+            if ((m_abilityCooldown == 0) && (m_speedTurnsLeft == 0)) return Speed();
+
+            if (enemy != null && enemyDistance <= 3 && m_abilityCooldown == 0) {
+                string counterType = CounterPacType(enemy.Type);
+                if (!counterType.Equals(m_type)) return this.Switch(counterType);
             }
 
-            /* 
-                TODO:
-                    - If the pellet is null and we get here it means we are in an empty area...
-                        We need to start searching for more pellets...
-            */
             if (pellet == null) {
                 Position next = BFS(m_position, map, width, height);
                 return next == null ? this.MoveTo(m_position) : this.MoveTo(next);
@@ -383,6 +383,7 @@ class Player
                 return this.MoveTo(pellet.Position);
             }
         }
+        
         /* 
             Return the type to counter the enemy's type
         */
