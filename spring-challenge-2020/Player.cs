@@ -93,12 +93,12 @@ class Player
                 );
 
                 /* track visited tiles */
-                map[pacMan.Position.x, pacMan.Position.y] = Obstacle.V;
                 current_map[pacMan.Position.x, pacMan.Position.y] = 
                     pacMan.Mine ? Obstacle.M : Obstacle.E;
 
                 if (pacMan.Mine) {
                     pacDudes.Add(pacMan);
+                     map[pacMan.Position.x, pacMan.Position.y] = Obstacle.V;
                 } else {
                     enemyPacDudes.Add(pacMan);
                 }
@@ -246,7 +246,6 @@ class Player
         TODO: Maybe add this into a interface or something? Instead of repeating it?
     */
     static int FindClosestObject(Position pos, List<PacMan> objects, ref PacMan target) {
-        int targetDistance = 100;
         int shortestDistance = 100;
 
         foreach(var obj in objects) {
@@ -260,7 +259,6 @@ class Player
         return shortestDistance;
     }
     static int FindClosestObject(Position pos, List<Pellet> objects, ref Pellet target) {
-        int targetDistance = 100;
         int shortestDistance = 100;
 
         foreach(var obj in objects) {
