@@ -35,7 +35,7 @@ class Player
         int height = int.Parse(inputs[1]); // top left corner is (x=0, y=0)
 
         /* contains the walls, pacDudes, and pellets in the game */
-        Obstacle[,] map = new Obstacle[width, height];
+        Map map = new Map(width, height);
 
         for (int i = 0; i < height; i++)
         {
@@ -43,16 +43,13 @@ class Player
             for (int j = 0; j < width; ++j) {
                 switch (row[j]) {
                     case ' ':
-                        map[j, i] = Obstacle.F;
+                        map.PlaceObstacle(j, i, Obstacle.F);
                         break;
                     case '#':
-                        map[j, i] = Obstacle.W;
+                        map.PlaceObstacle(j, i, Obstacle.W);
                         break;
                 }
-
-                Console.Error.Write(map[j, i]);
             }
-            Console.Error.WriteLine();
         }
 
         #endregion
@@ -73,7 +70,7 @@ class Player
             var commands = new StringBuilder();
 
             /* We need a shallow copy of the map to keep track of pacDudes and pellets */
-            var current_map = map.Clone() as Obstacle[,];
+            var current_map = map.Clone();
 
             #endregion
 
@@ -93,12 +90,16 @@ class Player
                 );
 
                 /* track visited tiles */
+                map.PlaceObstacle(
+                    pacMan.Position.x, 
+                    pacMan.Position.y, 
+                    Obstacle.V);
+                
                 current_map[pacMan.Position.x, pacMan.Position.y] = 
                     pacMan.Mine ? Obstacle.M : Obstacle.E;
 
                 if (pacMan.Mine) {
                     pacDudes.Add(pacMan);
-                     map[pacMan.Position.x, pacMan.Position.y] = Obstacle.V;
                 } else {
                     enemyPacDudes.Add(pacMan);
                 }
@@ -149,7 +150,9 @@ class Player
                 Pellet pellet = null;
                 int pelletDistance = FindClosestObject(pos, pellets, ref pellet);
 
-                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance, current_map, width, height);
+                /* Pass in grid to map class to process it */
+                Map game_map = new Map(width, height, current_map);
+                string command = pacman.GetCommand(enemy, enemyDistance, pellet, pelletDistance, game_map, width, height);
 
                 if (commands.Length == 0) commands.Append(command);
                 else commands.AppendFormat("|{0}", command);
@@ -161,85 +164,6 @@ class Player
             Console.WriteLine(commands.ToString());
 
         }
-    }
-
-    /*
-        Simple Breadth-First Search (BFS) to search for closest valid coordinate
-
-        Based on genius source:
-            https://www.redblobgames.com/pathfinding/a-star/introduction.html
-    */
-    static Position BFS(
-        Position start, 
-        Obstacle[,] map, 
-        int width, 
-        int height
-    ) {
-        var frontier = new Queue<Position>();
-        var cameFrom = new Dictionary<string, Position>();
-        cameFrom.Add(start.ToString(), null);
-        Position goal = null;
-
-        frontier.Enqueue(start);
-        while (frontier.Count !=0) {
-            var current = frontier.Dequeue();
-
-            Obstacle obstacle = map[current.x, current.y];
-
-            if (
-                //obstacle == Obstacle.E ||
-                obstacle == Obstacle.F ||
-                obstacle == Obstacle.P
-            ) {
-                    goal = current;
-                    break;
-            }
-
-            foreach(var next in GetNeighbours(current, width, height)) {
-                if (!cameFrom.ContainsKey(next.ToString())) {
-                    frontier.Enqueue(next);
-                    cameFrom.Add(next.ToString(), current);
-                }
-            }
-        }
-
-        return goal;
-    }
-
-    /*
-        Based on excellent source:
-            https://www.redblobgames.com/pathfinding/grids/graphs.html
-    */
-    static List<Position> GetNeighbours(Position pos, int width, int height) {
-        var directions = new List<Position> {
-            new Position(1, 0), // Right
-            new Position(0, 1), // Up
-            new Position(-1, 0), // Left
-            new Position(0, -1) // Down
-        };
-
-        var result = new List<Position>();
-
-        foreach(var direction in directions) {
-            Position neighbour = 
-                new Position(
-                    direction.x + pos.x, 
-                    direction.y + pos.y);
-            
-            /* 
-                If the coordinates are beyond the maximum or minimum
-                let's wrap around!
-            */
-            if (neighbour.x >= width) neighbour.x = 0;
-            else if (neighbour.x < 0) neighbour.x = width - 1;
-
-            if (neighbour.y >= height) neighbour.y = 0;
-            else if (neighbour.y < 0) neighbour.y = height - 1;
-
-            result.Add(neighbour);
-        }
-
-        return result;
     }
 
     /*
@@ -273,6 +197,137 @@ class Player
     }
 
     #region Game Objects
+
+    class Map {
+        private Obstacle[,] m_grid;
+        private int m_width;
+        private int m_height;
+        public Map(int width, int height) {
+            m_grid = new Obstacle[width, height];
+            m_width = width;
+            m_height = height;
+        }
+        /* This is useful when the grid is known */
+        public Map(int width, int height, Obstacle[,] grid) {
+            m_grid = grid.Clone() as Obstacle[,];
+            m_width = width;
+            m_height = height;
+        }
+        public Obstacle[,] Grid {
+            get { return m_grid; }
+        }
+        public int Width {
+            get { return m_width; }
+        }
+        public int Height {
+            get { return m_height; }
+        }
+        public Obstacle GetObstacle(Position pos) {
+            if (pos.x <= 0 || pos.x >= m_width) 
+                throw new Exception("The x coordinate cannot be larger/smaller than the width of the map!");
+            if (pos.y <= 0 || pos.y >= m_height)
+                throw new Exception("The y coordinate cannot be larger/smaller than the height of the map!");
+            
+            return m_grid[pos.x, pos.y];
+        }
+        public void PlaceObstacle(Position pos, Obstacle obs) {
+            if (pos.x < 0 || pos.x >= m_width) 
+                throw new Exception("The x coordinate cannot be larger/smaller than the width of the map!");
+            if (pos.y < 0 || pos.y >= m_height)
+                throw new Exception("The y coordinate cannot be larger/smaller than the height of the map!");
+            
+            m_grid[pos.x, pos.y] = obs;
+        }
+        public void PlaceObstacle(int x, int y, Obstacle obs) {
+            if (x < 0 || x >= m_width) 
+                throw new Exception("The x coordinate cannot be larger/smaller than the width of the map!");
+            if (y < 0 || y >= m_height)
+                throw new Exception("The y coordinate cannot be larger/smaller than the height of the map!");
+            
+            m_grid[x, y] = obs;
+        }
+        public Obstacle[,] Clone() {
+            return m_grid.Clone() as Obstacle[,];
+        }
+        /*
+            Based on excellent source:
+                https://www.redblobgames.com/pathfinding/grids/graphs.html
+        */
+        private List<Position> GetNeighbours(Position pos) {
+            var directions = new List<Position> {
+                new Position(1, 0), // Right
+                new Position(0, 1), // Up
+                new Position(-1, 0), // Left
+                new Position(0, -1) // Down
+            };
+
+            var result = new List<Position>();
+
+            foreach(var direction in directions) {
+                Position neighbour = 
+                    new Position(
+                        direction.x + pos.x, 
+                        direction.y + pos.y);
+                
+                /* 
+                    If the coordinates are beyond the maximum or minimum
+                    let's wrap around!
+                */
+                if (neighbour.x >= m_width) neighbour.x = 0;
+                else if (neighbour.x < 0) neighbour.x = m_width - 1;
+
+                if (neighbour.y >= m_height) neighbour.y = 0;
+                else if (neighbour.y < 0) neighbour.y = m_height - 1;
+
+                /* If the neighbour is a wall, then ignore it */
+                if (this.GetObstacle(neighbour) == Obstacle.W) continue;
+
+                result.Add(neighbour);
+            }
+
+            return result;
+        }
+
+        /*
+            Simple Breadth-First Search (BFS) to search for closest valid coordinate
+
+            Based on genius source:
+                https://www.redblobgames.com/pathfinding/a-star/introduction.html
+        */
+        public Position BFS(
+            Position start
+        ) {
+            var frontier = new Queue<Position>();
+            var cameFrom = new Dictionary<string, Position>();
+            cameFrom.Add(start.ToString(), null);
+            Position goal = null;
+
+            frontier.Enqueue(start);
+            while (frontier.Count !=0) {
+                var current = frontier.Dequeue();
+
+                Obstacle obstacle = m_grid[current.x, current.y];
+
+                if (
+                    //obstacle == Obstacle.E ||
+                    obstacle == Obstacle.F ||
+                    obstacle == Obstacle.P
+                ) {
+                        goal = current;
+                        break;
+                }
+
+                foreach(var next in GetNeighbours(current)) {
+                    if (!cameFrom.ContainsKey(next.ToString())) {
+                        frontier.Enqueue(next);
+                        cameFrom.Add(next.ToString(), current);
+                    }
+                }
+            }
+
+            return goal;
+        }
+    }
 
     class PacMan {
         #region Internal Variables
@@ -364,7 +419,7 @@ class Player
             - Within this function we'd have to implement the pathfinding function
         */
         /* This is the function where all the decision making is to be made */
-        public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance, Obstacle[,] map, int width, int height) {
+        public string GetCommand(PacMan enemy, int enemyDistance, Pellet pellet, int pelletDistance, Map map, int width, int height) {
             
             /* If we're cooled down then let's put our abilities to good use! */
             if ((m_abilityCooldown == 0) && (m_speedTurnsLeft == 0)) return Speed();
@@ -375,7 +430,7 @@ class Player
             }
 
             if (pellet == null) {
-                Position next = BFS(m_position, map, width, height);
+                Position next = map.BFS(m_position);
                 return next == null ? this.MoveTo(m_position) : this.MoveTo(next);
             } else {
                 return this.MoveTo(pellet.Position);
