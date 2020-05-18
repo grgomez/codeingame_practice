@@ -223,9 +223,9 @@ class Player
             get { return m_height; }
         }
         public Obstacle GetObstacle(Position pos) {
-            if (pos.x <= 0 || pos.x >= m_width) 
+            if (pos.x < 0 || pos.x >= m_width) 
                 throw new Exception("The x coordinate cannot be larger/smaller than the width of the map!");
-            if (pos.y <= 0 || pos.y >= m_height)
+            if (pos.y < 0 || pos.y >= m_height)
                 throw new Exception("The y coordinate cannot be larger/smaller than the height of the map!");
             
             return m_grid[pos.x, pos.y];
